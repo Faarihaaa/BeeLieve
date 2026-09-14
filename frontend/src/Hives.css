@@ -1,0 +1,542 @@
+/* =========================================
+   BeeLieve - Hives Page
+   ========================================= */
+
+.hives-page {
+  width: 100%;
+}
+
+/* ---------- Header ---------- */
+
+.hives-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+}
+
+.title-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.page-title-icon {
+  width: 52px;
+  height: 52px;
+  background: #fff4c9;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 27px;
+}
+
+.hives-page-header h1 {
+  margin: 0 0 5px;
+  color: #203128;
+  font-size: 30px;
+  font-weight: 700;
+}
+
+.hives-page-header p {
+  margin: 0;
+  color: #78847c;
+  font-size: 14px;
+}
+
+/* ---------- Add Hive Button ---------- */
+
+.add-hive-button {
+  border: none;
+  background: #2f6b46;
+  color: white;
+  padding: 12px 18px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.add-hive-button:hover {
+  background: #245738;
+}
+
+/* ---------- Form ---------- */
+
+.new-hive-form {
+  background: white;
+  border: 1px solid #e0e7e1;
+  border-radius: 15px;
+  padding: 24px;
+  margin-bottom: 28px;
+  box-shadow: 0 4px 16px rgba(31, 55, 42, 0.07);
+}
+
+.form-heading h2 {
+  margin: 0 0 5px;
+  color: #26372d;
+  font-size: 19px;
+}
+
+.form-heading p {
+  margin: 0 0 20px;
+  color: #7d8981;
+  font-size: 12px;
+}
+
+.new-hive-form .form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.new-hive-form .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.new-hive-form .form-group label {
+  color: #536158;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.new-hive-form .form-group input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d9e2dc;
+  border-radius: 8px;
+  background: #fbfcfb;
+  color: #26372d;
+  outline: none;
+  font-size: 13px;
+}
+
+.new-hive-form .form-group input:focus {
+  border-color: #2f6b46;
+}
+
+/* ---------- GPS ---------- */
+
+.gps-button {
+  width: 100%;
+  margin-top: 17px;
+  padding: 12px;
+  border: 1px dashed #9ab8a3;
+  border-radius: 9px;
+  background: #f1f8f3;
+  color: #2f6b46;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.gps-button:hover {
+  background: #e7f3ea;
+}
+
+.gps-button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+/* ---------- Location Preview ---------- */
+
+.location-preview {
+  margin-top: 14px;
+  padding: 12px 14px;
+  background: #f6f8f6;
+  border-radius: 9px;
+  display: flex;
+  gap: 10px;
+  color: #55715e;
+}
+
+.location-preview strong {
+  display: block;
+  color: #34483b;
+  font-size: 12px;
+}
+
+.location-preview span {
+  display: block;
+  margin-top: 3px;
+  color: #879189;
+  font-size: 11px;
+}
+
+/* ---------- Form Buttons ---------- */
+
+.new-hive-form .form-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.save-hive-button {
+  border: none;
+  background: #2f6b46;
+  color: white;
+  padding: 11px 17px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.cancel-hive-button {
+  border: 1px solid #d5ded8;
+  background: white;
+  color: #637068;
+  padding: 11px 17px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+/* ---------- Animation ---------- */
+
+.spin {
+  animation: hiveSpin 1s linear infinite;
+}
+
+@keyframes hiveSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- Hive List Header ---------- */
+
+.hive-list-header {
+  margin-bottom: 16px;
+}
+
+.hive-list-header h2 {
+  margin: 0;
+  color: #26372d;
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.hive-list-header span {
+  display: block;
+  margin-top: 4px;
+  color: #89948d;
+  font-size: 12px;
+}
+
+/* =========================================
+   HIVE CARDS
+   ========================================= */
+
+.new-hive-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.new-hive-card {
+  min-width: 0;
+  background: white;
+  border: 1px solid #e0e7e1;
+  border-radius: 16px;
+  padding: 21px;
+  box-shadow: 0 5px 18px rgba(31, 55, 42, 0.07);
+  transition: 0.2s ease;
+}
+
+.new-hive-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 9px 25px rgba(31, 55, 42, 0.11);
+}
+
+/* ---------- Card Header ---------- */
+
+.new-hive-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.hive-card-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.hive-bee-icon {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  border-radius: 13px;
+  background: #fff4c9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 23px;
+}
+
+.hive-card-title h3 {
+  margin: 0 0 5px;
+  color: #26372d;
+  font-size: 19px;
+  font-weight: 750;
+}
+
+.hive-location {
+  max-width: 180px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #7d8981;
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hive-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 9px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.hive-status.healthy {
+  background: #eaf6ed;
+  color: #2d7e48;
+}
+
+.hive-status.attention {
+  background: #fff3df;
+  color: #b8751c;
+}
+
+.hive-status.critical {
+  background: #ffebeb;
+  color: #c84040;
+}
+
+.status-dot-small {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* =========================================
+   SENSOR READING BOXES
+   ========================================= */
+
+.hive-reading-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.hive-reading {
+  min-width: 0;
+  padding: 13px;
+  background: #f7f9f7;
+  border: 1px solid #edf1ed;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.reading-icon {
+  width: 35px;
+  height: 35px;
+  flex-shrink: 0;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reading-icon.temperature {
+  background: #fff0e7;
+  color: #d56c39;
+}
+
+.reading-icon.humidity {
+  background: #e9f5fb;
+  color: #3485a7;
+}
+
+.hive-reading span {
+  display: block;
+  margin-bottom: 3px;
+  color: #879189;
+  font-size: 10px;
+}
+
+.hive-reading strong {
+  display: block;
+  color: #27382e;
+  font-size: 16px;
+  font-weight: 750;
+}
+
+/* ---------- Weather ---------- */
+
+.weather-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  margin-bottom: 14px;
+  background: #fffaf0;
+  border: 1px solid #f4e8ce;
+  border-radius: 10px;
+  color: #b38325;
+}
+
+.weather-note strong {
+  display: block;
+  color: #755a22;
+  font-size: 11px;
+}
+
+.weather-note span {
+  display: block;
+  margin-top: 2px;
+  color: #9b8961;
+  font-size: 10px;
+}
+
+/* ---------- View Details ---------- */
+
+.view-hive-button {
+  width: 100%;
+  padding: 9px 2px 2px;
+  border: none;
+  background: transparent;
+  color: #2f6b46;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.view-hive-button:hover {
+  color: #173d2b;
+}
+
+/* ---------- Information Note ---------- */
+
+.hive-info-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-top: 20px;
+  padding: 13px 15px;
+  background: #f0f6f1;
+  border: 1px solid #dce9df;
+  border-radius: 10px;
+}
+
+.hive-info-note > div {
+  color: #4c7b5b;
+  font-weight: 700;
+}
+
+.hive-info-note p {
+  margin: 0;
+  color: #68766d;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.hive-info-note strong {
+  color: #405a48;
+}
+
+/* ---------- Empty State ---------- */
+
+.no-hives {
+  padding: 55px 20px;
+  background: white;
+  border: 1px solid #e0e7e1;
+  border-radius: 16px;
+  text-align: center;
+}
+
+.no-hives-icon {
+  width: 65px;
+  height: 65px;
+  margin: 0 auto 15px;
+  background: #fff4c9;
+  border-radius: 17px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+}
+
+.no-hives h3 {
+  margin: 0 0 6px;
+  color: #26372d;
+}
+
+.no-hives p {
+  margin: 0 0 18px;
+  color: #879189;
+  font-size: 12px;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 850px) {
+  .new-hive-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 650px) {
+  .hives-page-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .add-hive-button {
+    justify-content: center;
+  }
+
+  .new-hive-form .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .new-hive-card-header {
+    flex-direction: column;
+  }
+
+  .hive-reading-grid {
+    grid-template-columns: 1fr;
+  }
+}
