@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Package,
   Plus,
@@ -21,29 +21,8 @@ import {
 function HoneyProduction() {
   const [showForm, setShowForm] = useState(false);
 
-  const [harvests, setHarvests] = useState([
-    {
-      id: 1,
-      date: "2026-09-05",
-      hive: "H-001",
-      quantity: 12.5,
-      type: "Wildflower",
-    },
-    {
-      id: 2,
-      date: "2026-09-02",
-      hive: "H-002",
-      quantity: 9.8,
-      type: "Multifloral",
-    },
-    {
-      id: 3,
-      date: "2026-08-20",
-      hive: "H-003",
-      quantity: 7.2,
-      type: "Forest Honey",
-    },
-  ]);
+  // Harvest data from PostgreSQL
+  const [harvests, setHarvests] = useState([]);
 
   const [formData, setFormData] = useState({
     date: "",
@@ -52,8 +31,46 @@ function HoneyProduction() {
     type: "",
   });
 
+  const [loading, setLoading] = useState(true);
+
+  // =======================================
+  // LOAD HARVESTS FROM DATABASE
+  // =======================================
+
+  const fetchHarvests = async () => {
+    try {
+      setLoading(true);
+
+      const response = await fetch(
+        "http://localhost:5000/api/harvests"
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch harvests");
+      }
+
+      const data = await response.json();
+
+      setHarvests(data);
+
+    } catch (error) {
+      console.error("Error loading harvests:", error);
+      alert("Could not load harvest records.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchHarvests();
+  }, []);
+
+  // =======================================
+  // CALCULATIONS
+  // =======================================
+
   const totalProduction = harvests.reduce(
-    (total, harvest) => total + Number(harvest.quantity),
+    (total, harvest) => total + Number(harvest.quantity || 0),
     0
   );
 
@@ -66,7 +83,7 @@ function HoneyProduction() {
       hiveProduction[harvest.hive] = 0;
     }
 
-    hiveProduction[harvest.hive] += Number(harvest.quantity);
+    hiveProduction[harvest.hive] += Number(harvest.quantity || 0);
   });
 
   const hiveChartData = Object.entries(hiveProduction).map(
@@ -76,14 +93,53 @@ function HoneyProduction() {
     })
   );
 
-  const monthlyData = [
-    { month: "Apr", production: 18 },
-    { month: "May", production: 24 },
-    { month: "Jun", production: 31 },
-    { month: "Jul", production: 27 },
-    { month: "Aug", production: 35 },
-    { month: "Sep", production: 29.5 },
+  // =======================================
+  // MONTHLY PRODUCTION
+  // =======================================
+
+  const monthlyProduction = {};
+
+  harvests.forEach((harvest) => {
+    if (!harvest.date) return;
+
+    const date = new Date(harvest.date);
+
+    const month = date.toLocaleString("en-US", {
+      month: "short",
+    });
+
+    if (!monthlyProduction[month]) {
+      monthlyProduction[month] = 0;
+    }
+
+    monthlyProduction[month] += Number(harvest.quantity || 0);
+  });
+
+  const monthOrder = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
   ];
+
+  const monthlyData = monthOrder
+    .filter((month) => monthlyProduction[month] !== undefined)
+    .map((month) => ({
+      month,
+      production: Number(monthlyProduction[month].toFixed(1)),
+    }));
+
+  // =======================================
+  // FORM INPUT
+  // =======================================
 
   const handleInputChange = (event) => {
     const { name, value } = event.target;
@@ -94,7 +150,11 @@ function HoneyProduction() {
     });
   };
 
-  const addHarvest = (event) => {
+  // =======================================
+  // ADD HARVEST
+  // =======================================
+
+  const addHarvest = async (event) => {
     event.preventDefault();
 
     if (
@@ -107,32 +167,67 @@ function HoneyProduction() {
       return;
     }
 
-    const newHarvest = {
-      id: Date.now(),
-      date: formData.date,
-      hive: formData.hive,
-      quantity: Number(formData.quantity),
-      type: formData.type,
-    };
+    try {
+      const response = await fetch(
+        "http://localhost:5000/api/harvests",
+        {
+          method: "POST",
 
-    setHarvests([newHarvest, ...harvests]);
+          headers: {
+            "Content-Type": "application/json",
+          },
 
-    setFormData({
-      date: "",
-      hive: "",
-      quantity: "",
-      type: "",
-    });
+          body: JSON.stringify({
+            date: formData.date,
+            hive: formData.hive,
+            quantity: Number(formData.quantity),
+            type: formData.type,
+          }),
+        }
+      );
 
-    setShowForm(false);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.message || "Failed to save harvest"
+        );
+      }
+
+      alert("Harvest saved successfully! 🐝");
+
+      // Reset form
+      setFormData({
+        date: "",
+        hive: "",
+        quantity: "",
+        type: "",
+      });
+
+      setShowForm(false);
+
+      // Reload database records
+      fetchHarvests();
+
+    } catch (error) {
+      console.error("Error saving harvest:", error);
+
+      alert(error.message);
+    }
   };
+
+  // =======================================
+  // UI
+  // =======================================
 
   return (
     <div className="production-page">
 
       {/* HEADER */}
       <div className="production-header">
+
         <div className="production-title">
+
           <div className="production-title-icon">
             <Package size={27} />
           </div>
@@ -144,6 +239,7 @@ function HoneyProduction() {
               Track honey harvests and monitor production from your hives.
             </p>
           </div>
+
         </div>
 
         <button
@@ -153,111 +249,186 @@ function HoneyProduction() {
           <Plus size={17} />
           Add Harvest
         </button>
+
       </div>
+
 
       {/* SUMMARY CARDS */}
       <div className="production-summary">
 
         <div className="production-card">
+
           <div className="production-card-icon">
             <Weight size={22} />
           </div>
 
           <div>
             <span>Total Honey Produced</span>
-            <strong>{totalProduction.toFixed(1)} kg</strong>
+
+            <strong>
+              {totalProduction.toFixed(1)} kg
+            </strong>
           </div>
+
         </div>
 
+
         <div className="production-card">
+
           <div className="production-card-icon harvest-icon">
             <Package size={22} />
           </div>
 
           <div>
             <span>Total Harvests</span>
-            <strong>{totalHarvests}</strong>
+
+            <strong>
+              {totalHarvests}
+            </strong>
           </div>
+
         </div>
 
+
         <div className="production-card">
+
           <div className="production-card-icon hive-production-icon">
             <Home size={22} />
           </div>
 
           <div>
             <span>Active Hives</span>
-            <strong>{Object.keys(hiveProduction).length}</strong>
+
+            <strong>
+              {Object.keys(hiveProduction).length}
+            </strong>
           </div>
+
         </div>
+
       </div>
+
 
       {/* CHARTS */}
       <div className="production-charts">
 
-        {/* MONTHLY */}
+        {/* MONTHLY PRODUCTION */}
         <div className="production-chart-card">
 
           <div className="production-section-header">
+
             <div>
               <h2>Monthly Production</h2>
-              <p>Honey production trend over recent months</p>
+
+              <p>
+                Honey production trend from recorded harvests
+              </p>
             </div>
+
           </div>
+
 
           <div className="production-chart">
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" />
 
-                <XAxis dataKey="month" />
+            {monthlyData.length === 0 ? (
 
-                <YAxis />
+              <div className="empty-state">
+                No production data available yet.
+              </div>
 
-                <Tooltip />
+            ) : (
 
-                <Bar
-                  dataKey="production"
-                  fill="#f5b719"
-                  radius={[6, 6, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
+              <ResponsiveContainer
+                width="100%"
+                height={280}
+              >
+
+                <BarChart data={monthlyData}>
+
+                  <CartesianGrid strokeDasharray="3 3" />
+
+                  <XAxis dataKey="month" />
+
+                  <YAxis />
+
+                  <Tooltip />
+
+                  <Bar
+                    dataKey="production"
+                    fill="#f5b719"
+                    radius={[6, 6, 0, 0]}
+                  />
+
+                </BarChart>
+
+              </ResponsiveContainer>
+
+            )}
+
           </div>
+
         </div>
 
-        {/* HIVE-WISE */}
+
+        {/* HIVE-WISE PRODUCTION */}
         <div className="production-chart-card">
 
           <div className="production-section-header">
+
             <div>
               <h2>Hive-wise Production</h2>
-              <p>Total honey collected from each hive</p>
+
+              <p>
+                Total honey collected from each hive
+              </p>
             </div>
+
           </div>
+
 
           <div className="production-chart">
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={hiveChartData}>
-                <CartesianGrid strokeDasharray="3 3" />
 
-                <XAxis dataKey="hive" />
+            {hiveChartData.length === 0 ? (
 
-                <YAxis />
+              <div className="empty-state">
+                No harvest records available yet.
+              </div>
 
-                <Tooltip />
+            ) : (
 
-                <Bar
-                  dataKey="quantity"
-                  fill="#0b6549"
-                  radius={[6, 6, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
+              <ResponsiveContainer
+                width="100%"
+                height={280}
+              >
+
+                <BarChart data={hiveChartData}>
+
+                  <CartesianGrid strokeDasharray="3 3" />
+
+                  <XAxis dataKey="hive" />
+
+                  <YAxis />
+
+                  <Tooltip />
+
+                  <Bar
+                    dataKey="quantity"
+                    fill="#0b6549"
+                    radius={[6, 6, 0, 0]}
+                  />
+
+                </BarChart>
+
+              </ResponsiveContainer>
+
+            )}
+
           </div>
+
         </div>
 
       </div>
+
 
       {/* HARVEST HISTORY */}
       <div className="harvest-history-card">
@@ -265,67 +436,112 @@ function HoneyProduction() {
         <div className="production-section-header">
 
           <div>
+
             <h2>Harvest History</h2>
 
             <p>
               Recent honey collection records
             </p>
+
           </div>
 
         </div>
 
+
         <div className="harvest-table-wrapper">
 
-          <table className="harvest-table">
+          {loading ? (
 
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Hive</th>
-                <th>Honey Type</th>
-                <th>Quantity</th>
-              </tr>
-            </thead>
+            <div className="empty-state">
+              Loading harvest records...
+            </div>
 
-            <tbody>
+          ) : harvests.length === 0 ? (
 
-              {harvests.map((harvest) => (
+            <div className="empty-state">
+              No harvest records yet. Click "Add Harvest" to create one.
+            </div>
 
-                <tr key={harvest.id}>
+          ) : (
 
-                  <td>
-                    <div className="table-date">
-                      <Calendar size={15} />
-                      {harvest.date}
-                    </div>
-                  </td>
+            <table className="harvest-table">
 
-                  <td>
-                    <strong>{harvest.hive}</strong>
-                  </td>
+              <thead>
 
-                  <td>
-                    <span className="honey-type">
-                      {harvest.type}
-                    </span>
-                  </td>
-
-                  <td>
-                    <strong>
-                      {Number(harvest.quantity).toFixed(1)} kg
-                    </strong>
-                  </td>
-
+                <tr>
+                  <th>Date</th>
+                  <th>Hive</th>
+                  <th>Honey Type</th>
+                  <th>Quantity</th>
                 </tr>
 
-              ))}
+              </thead>
 
-            </tbody>
 
-          </table>
+              <tbody>
+
+                {harvests.map((harvest) => (
+
+                  <tr key={harvest.id}>
+
+                    <td>
+
+                      <div className="table-date">
+
+                        <Calendar size={15} />
+
+                        {harvest.date}
+
+                      </div>
+
+                    </td>
+
+
+                    <td>
+                      <strong>
+                        {harvest.hive}
+                      </strong>
+                    </td>
+
+
+                    <td>
+
+                      <span className="honey-type">
+
+                        {harvest.notes
+                          ? harvest.notes.replace(
+                              "Honey Type: ",
+                              ""
+                            ).split(" | ")[0]
+                          : "—"}
+
+                      </span>
+
+                    </td>
+
+
+                    <td>
+
+                      <strong>
+                        {Number(harvest.quantity).toFixed(1)} kg
+                      </strong>
+
+                    </td>
+
+                  </tr>
+
+                ))}
+
+              </tbody>
+
+            </table>
+
+          )}
 
         </div>
+
       </div>
+
 
       {/* ADD HARVEST MODAL */}
       {showForm && (
@@ -337,12 +553,15 @@ function HoneyProduction() {
             <div className="harvest-modal-header">
 
               <div>
+
                 <h2>Add Honey Harvest</h2>
 
                 <p>
                   Record a new honey collection.
                 </p>
+
               </div>
+
 
               <button
                 className="close-modal-button"
@@ -353,10 +572,12 @@ function HoneyProduction() {
 
             </div>
 
+
             <form onSubmit={addHarvest}>
 
               <div className="harvest-form-grid">
 
+                {/* DATE */}
                 <div className="harvest-form-group">
 
                   <label>
@@ -372,6 +593,8 @@ function HoneyProduction() {
 
                 </div>
 
+
+                {/* HIVE */}
                 <div className="harvest-form-group">
 
                   <label>
@@ -381,13 +604,15 @@ function HoneyProduction() {
                   <input
                     type="text"
                     name="hive"
-                    placeholder="Example: H-004"
+                    placeholder="Example: H-101"
                     value={formData.hive}
                     onChange={handleInputChange}
                   />
 
                 </div>
 
+
+                {/* QUANTITY */}
                 <div className="harvest-form-group">
 
                   <label>
@@ -406,6 +631,8 @@ function HoneyProduction() {
 
                 </div>
 
+
+                {/* HONEY TYPE */}
                 <div className="harvest-form-group">
 
                   <label>
@@ -417,6 +644,7 @@ function HoneyProduction() {
                     value={formData.type}
                     onChange={handleInputChange}
                   >
+
                     <option value="">
                       Select honey type
                     </option>
@@ -440,12 +668,15 @@ function HoneyProduction() {
                     <option value="Other">
                       Other
                     </option>
+
                   </select>
 
                 </div>
 
               </div>
 
+
+              {/* BUTTONS */}
               <div className="harvest-form-buttons">
 
                 <button
@@ -456,12 +687,16 @@ function HoneyProduction() {
                   Cancel
                 </button>
 
+
                 <button
                   type="submit"
                   className="save-harvest-button"
                 >
+
                   <Plus size={16} />
+
                   Save Harvest
+
                 </button>
 
               </div>

@@ -1,7 +1,5 @@
-import QRVerification from "./QRVerification.jsx";
-import Batches from "./Batches.jsx";
-import HoneyProduction from "./HoneyProduction.jsx";
 import { useEffect, useState } from "react";
+import'./App.css';
 
 import {
   LayoutDashboard,
@@ -12,7 +10,7 @@ import {
   Package,
   QrCode,
   RefreshCw,
-  Settings,
+  Settings as SettingsIcon,
   Menu,
   X,
   LogOut,
@@ -24,52 +22,51 @@ import Hives from "./Hives.jsx";
 import Sensors from "./Sensors.jsx";
 import Alerts from "./Alerts.jsx";
 import AIInsights from "./AIInsights.jsx";
+import HoneyProduction from "./HoneyProduction.jsx";
+import Batches from "./Batches.jsx";
+import QRVerification from "./QRVerification.jsx";
+import SyncCenter from "./SyncCenter.jsx";
+import Settings from "./Settings.jsx";
 
-import "./App.css";
 
 function App() {
   const [activePage, setActivePage] = useState("dashboard");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [hives, setHives] = useState([]);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // =====================================================
-  // LOAD HIVES FROM BACKEND
-  // =====================================================
+  /* -------------------------------------------------------
+     LOAD HIVES FROM BACKEND
+     ------------------------------------------------------- */
 
-  const loadHives = () => {
-    fetch("http://localhost:5000/api/hives")
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Failed to load hives");
-        }
+  const fetchHives = async () => {
+    try {
+      const response = await fetch("http://localhost:5000/api/hives");
 
-        return response.json();
-      })
-      .then((data) => {
-        setHives(data);
-      })
-      .catch((error) => {
-        console.error("Error loading hives:", error);
-      });
+      if (!response.ok) {
+        throw new Error("Failed to fetch hives");
+      }
+
+      const data = await response.json();
+      setHives(data);
+    } catch (error) {
+      console.error("Error fetching hives:", error);
+    }
   };
 
-  // =====================================================
-  // AUTO REFRESH
-  // =====================================================
-
   useEffect(() => {
-    loadHives();
+    fetchHives();
 
     const interval = setInterval(() => {
-      loadHives();
+      fetchHives();
     }, 5000);
 
     return () => clearInterval(interval);
   }, []);
 
-  // =====================================================
-  // DASHBOARD COUNTS
-  // =====================================================
+
+  /* -------------------------------------------------------
+     DASHBOARD COUNTS
+     ------------------------------------------------------- */
 
   const totalHives = hives.length;
 
@@ -85,23 +82,10 @@ function App() {
     (hive) => hive.status === "Critical"
   ).length;
 
-  const healthPercentage =
-    totalHives > 0
-      ? Math.round((healthyHives / totalHives) * 100)
-      : 0;
 
-  // =====================================================
-  // NAVIGATION
-  // =====================================================
-
-  const navigateTo = (page) => {
-    setActivePage(page);
-    setSidebarOpen(false);
-  };
-
-  // =====================================================
-  // PAGE TITLE
-  // =====================================================
+  /* -------------------------------------------------------
+     PAGE TITLE
+     ------------------------------------------------------- */
 
   const getPageTitle = () => {
     switch (activePage) {
@@ -109,10 +93,10 @@ function App() {
         return "Dashboard";
 
       case "hives":
-        return "Hives";
+        return "Hive Management";
 
       case "sensors":
-        return "Sensors";
+        return "Sensor Monitoring";
 
       case "alerts":
         return "Alerts";
@@ -140,43 +124,107 @@ function App() {
     }
   };
 
-  // =====================================================
-  // DASHBOARD
-  // =====================================================
+
+  /* -------------------------------------------------------
+     NAVIGATION
+     ------------------------------------------------------- */
+
+  const navigationItems = [
+    {
+      id: "dashboard",
+      label: "Dashboard",
+      icon: LayoutDashboard,
+    },
+    {
+      id: "hives",
+      label: "Hives",
+      icon: Home,
+    },
+    {
+      id: "sensors",
+      label: "Sensors",
+      icon: Activity,
+    },
+    {
+      id: "alerts",
+      label: "Alerts",
+      icon: Bell,
+    },
+    {
+      id: "ai",
+      label: "AI Insights",
+      icon: Brain,
+    },
+    {
+      id: "production",
+      label: "Honey Production",
+      icon: Package,
+    },
+    {
+      id: "batches",
+      label: "Batches",
+      icon: Package,
+    },
+    {
+      id: "qr",
+      label: "QR Verification",
+      icon: QrCode,
+    },
+    {
+      id: "sync",
+      label: "Sync Center",
+      icon: RefreshCw,
+    },
+    {
+      id: "settings",
+      label: "Settings",
+      icon: SettingsIcon,
+    },
+  ];
+
+
+  /* -------------------------------------------------------
+     PAGE CHANGE
+     ------------------------------------------------------- */
+
+  const handlePageChange = (page) => {
+    setActivePage(page);
+    setMobileMenuOpen(false);
+  };
+
+
+  /* -------------------------------------------------------
+     DASHBOARD
+     ------------------------------------------------------- */
 
   const Dashboard = () => {
     return (
-      <div className="page-content">
+      <div className="dashboard-page">
 
-        {/* ================= HEADER ================= */}
-
-        <div className="dashboard-header">
+        <div className="dashboard-welcome">
           <div>
-            <h1>Good morning 👋</h1>
+            <h1>Good day, Beekeeper 🐝</h1>
 
             <p>
-              Monitor your hives and manage your beekeeping operations.
+              Monitor your hives, track honey production and keep
+              your colonies healthy.
             </p>
           </div>
 
-          <button
-            className="refresh-button"
-            onClick={loadHives}
-          >
-            <RefreshCw size={16} />
-            Refresh
-          </button>
+          <div className="dashboard-live-status">
+            <Wifi size={16} />
+            <span>System Online</span>
+          </div>
         </div>
 
-        {/* ================= STAT CARDS ================= */}
 
-        <div className="stats-grid">
+        {/* SUMMARY CARDS */}
 
-          {/* TOTAL HIVES */}
+        <div className="dashboard-summary-grid">
 
-          <div className="stat-card">
-            <div className="stat-icon">
-              <Home size={24} />
+          <div className="dashboard-summary-card">
+            <div className="summary-icon">
+              <Home size={22} />
             </div>
 
             <div>
@@ -185,11 +233,10 @@ function App() {
             </div>
           </div>
 
-          {/* HEALTHY */}
 
-          <div className="stat-card">
-            <div className="stat-icon healthy-icon">
-              <Activity size={24} />
+          <div className="dashboard-summary-card">
+            <div className="summary-icon healthy">
+              <Activity size={22} />
             </div>
 
             <div>
@@ -198,11 +245,10 @@ function App() {
             </div>
           </div>
 
-          {/* ATTENTION */}
 
-          <div className="stat-card">
-            <div className="stat-icon attention-icon">
-              <Bell size={24} />
+          <div className="dashboard-summary-card">
+            <div className="summary-icon attention">
+              <Bell size={22} />
             </div>
 
             <div>
@@ -211,11 +257,10 @@ function App() {
             </div>
           </div>
 
-          {/* CRITICAL */}
 
-          <div className="stat-card">
-            <div className="stat-icon critical-icon">
-              <Bell size={24} />
+          <div className="dashboard-summary-card">
+            <div className="summary-icon critical">
+              <Bell size={22} />
             </div>
 
             <div>
@@ -223,302 +268,161 @@ function App() {
               <strong>{criticalHives}</strong>
             </div>
           </div>
+
         </div>
 
-        {/* ================= DASHBOARD GRID ================= */}
 
-        <div className="dashboard-grid">
+        {/* HIVE OVERVIEW */}
 
-          {/* HIVE HEALTH */}
+        <div className="dashboard-section">
 
-          <div className="dashboard-card health-card">
-
-            <div className="card-header">
-              <div>
-                <h2>Hive Health</h2>
-                <p>Current overall hive condition</p>
-              </div>
-
-              <Activity size={22} />
-            </div>
-
-            <div className="health-content">
-
-              <div className="health-circle">
-                <div>
-                  <strong>{healthPercentage}%</strong>
-                  <span>Healthy</span>
-                </div>
-              </div>
-
-              <div className="health-details">
-
-                <div>
-                  <span className="health-dot healthy-dot"></span>
-                  <p>Healthy</p>
-                  <strong>{healthyHives}</strong>
-                </div>
-
-                <div>
-                  <span className="health-dot attention-dot"></span>
-                  <p>Attention</p>
-                  <strong>{attentionHives}</strong>
-                </div>
-
-                <div>
-                  <span className="health-dot critical-dot"></span>
-                  <p>Critical</p>
-                  <strong>{criticalHives}</strong>
-                </div>
-
-              </div>
-            </div>
-          </div>
-
-          {/* ACTIVE ALERTS */}
-
-          <div className="dashboard-card">
-
-            <div className="card-header">
-              <div>
-                <h2>Active Alerts</h2>
-                <p>Issues requiring attention</p>
-              </div>
-
-              <Bell size={22} />
-            </div>
-
-            <div className="dashboard-alerts">
-
-              {/* CRITICAL ALERT */}
-
-              {criticalHives > 0 && (
-                <div className="dashboard-alert critical-alert">
-
-                  <Bell size={18} />
-
-                  <div>
-                    <strong>
-                      {criticalHives} critical hive
-                      {criticalHives > 1 ? "s" : ""}
-                    </strong>
-
-                    <p>
-                      Immediate inspection recommended.
-                    </p>
-                  </div>
-
-                </div>
-              )}
-
-              {/* ATTENTION ALERT */}
-
-              {attentionHives > 0 && (
-                <div className="dashboard-alert attention-alert">
-
-                  <Bell size={18} />
-
-                  <div>
-                    <strong>
-                      {attentionHives} hive
-                      {attentionHives > 1 ? "s" : ""}
-                      {" "}need attention
-                    </strong>
-
-                    <p>
-                      Monitor environmental conditions.
-                    </p>
-                  </div>
-
-                </div>
-              )}
-
-              {/* NO ALERTS */}
-
-              {criticalHives === 0 &&
-                attentionHives === 0 && (
-                  <div className="no-dashboard-alerts">
-
-                    <Activity size={25} />
-
-                    <p>
-                      All hives are currently healthy.
-                    </p>
-
-                  </div>
-                )}
-
-            </div>
-          </div>
-        </div>
-
-        {/* ================= RECENT HIVE READINGS ================= */}
-
-        <div className="dashboard-card recent-hives-card">
-
-          <div className="card-header">
+          <div className="dashboard-section-header">
 
             <div>
-              <h2>Recent Hive Readings</h2>
-
-              <p>
-                Latest environmental information from your hives
-              </p>
+              <h2>Hive Overview</h2>
+              <p>Current status of your registered hives.</p>
             </div>
 
             <button
-              className="view-all-button"
-              onClick={() => navigateTo("hives")}
+              className="dashboard-view-button"
+              onClick={() => handlePageChange("hives")}
             >
               View All
-              <ChevronRight size={16} />
+              <ChevronRight size={15} />
             </button>
 
           </div>
 
-          {/* NO HIVES */}
 
-          {hives.length === 0 ? (
+          <div className="dashboard-hive-grid">
 
-            <div className="empty-dashboard">
+            {hives.length === 0 ? (
 
-              <Home size={35} />
+              <div className="dashboard-empty">
+                <Home size={30} />
+                <strong>No hives available</strong>
+                <span>
+                  Add your first hive from Hive Management.
+                </span>
+              </div>
 
-              <h3>No hives added</h3>
+            ) : (
 
-              <p>
-                Add your first hive to start monitoring.
-              </p>
-
-              <button
-                className="primary-button"
-                onClick={() => navigateTo("hives")}
-              >
-                Add Hive
-              </button>
-
-            </div>
-
-          ) : (
-
-            /* HIVES */
-
-            <div className="dashboard-hive-list">
-
-              {hives.slice(0, 5).map((hive) => (
+              hives.slice(0, 4).map((hive) => (
 
                 <div
-                  className="dashboard-hive-row"
+                  className="dashboard-hive-card"
                   key={hive.id}
                 >
 
-                  {/* HIVE */}
+                  <div className="dashboard-hive-card-top">
 
-                  <div className="dashboard-hive-name">
+                    <div>
+                      <strong>{hive.id}</strong>
+                      <span>{hive.location}</span>
+                    </div>
 
-                    <div className="small-bee-icon">
-                      🐝
+                    <span
+                      className={`dashboard-status ${hive.status
+                        ?.toLowerCase()
+                        .replaceAll(" ", "-")}`}
+                    >
+                      {hive.status}
+                    </span>
+
+                  </div>
+
+
+                  <div className="dashboard-reading-row">
+
+                    <div>
+                      <span>Temperature</span>
+                      <strong>
+                        {hive.temperature ?? "--"}°C
+                      </strong>
                     </div>
 
                     <div>
-
+                      <span>Humidity</span>
                       <strong>
-                        {hive.id}
+                        {hive.humidity ?? "--"}%
                       </strong>
-
-                      <span>
-                        {hive.location}
-                      </span>
-
                     </div>
 
-                  </div>
-
-                  {/* TEMPERATURE */}
-
-                  <div className="dashboard-reading">
-
-                    <span>
-                      Temperature
-                    </span>
-
-                    <strong>
-                      {hive.temperature ?? "--"}°C
-                    </strong>
-
-                  </div>
-
-                  {/* HUMIDITY */}
-
-                  <div className="dashboard-reading">
-
-                    <span>
-                      Humidity
-                    </span>
-
-                    <strong>
-                      {hive.humidity ?? "--"}%
-                    </strong>
-
-                  </div>
-
-                  {/* STATUS */}
-
-                  <div
-                    className={`dashboard-status ${
-                      hive.status === "Healthy"
-                        ? "status-healthy"
-                        : hive.status === "Critical"
-                        ? "status-critical"
-                        : "status-attention"
-                    }`}
-                  >
-                    {hive.status}
                   </div>
 
                 </div>
 
-              ))}
+              ))
 
-            </div>
+            )}
 
-          )}
-
-        </div>
-
-      </div>
-    );
-  };
-
-  // =====================================================
-  // COMING SOON
-  // =====================================================
-
-  const ComingSoon = ({
-    title,
-    description,
-    icon,
-  }) => {
-    return (
-      <div className="page-content">
-
-        <div className="coming-soon">
-
-          <div className="coming-soon-icon">
-            {icon}
           </div>
 
-          <h1>
-            {title}
-          </h1>
+        </div>
 
-          <p>
-            {description}
-          </p>
 
-          <span className="coming-badge">
-            Coming Soon
-          </span>
+        {/* QUICK ACTIONS */}
+
+        <div className="dashboard-section">
+
+          <div className="dashboard-section-header">
+
+            <div>
+              <h2>Quick Actions</h2>
+              <p>Access important BeeLieve features.</p>
+            </div>
+
+          </div>
+
+
+          <div className="dashboard-actions-grid">
+
+            <button
+              onClick={() => handlePageChange("hives")}
+            >
+              <Home size={20} />
+              <span>Manage Hives</span>
+            </button>
+
+            <button
+              onClick={() => handlePageChange("sensors")}
+            >
+              <Activity size={20} />
+              <span>View Sensors</span>
+            </button>
+
+            <button
+              onClick={() => handlePageChange("alerts")}
+            >
+              <Bell size={20} />
+              <span>Check Alerts</span>
+            </button>
+
+            <button
+              onClick={() => handlePageChange("qr")}
+            >
+              <QrCode size={20} />
+              <span>Verify Honey</span>
+            </button>
+
+          </div>
+
+        </div>
+
+
+        {/* SYSTEM STATUS */}
+
+        <div className="dashboard-system-status">
+
+          <div className="system-status-icon">
+            <Wifi size={17} />
+          </div>
+
+          <div>
+            <strong>System Online</strong>
+            <span>BeeLieve connected</span>
+          </div>
 
         </div>
 
@@ -526,9 +430,10 @@ function App() {
     );
   };
 
-  // =====================================================
-  // PAGE ROUTER
-  // =====================================================
+
+  /* -------------------------------------------------------
+     PAGE RENDER
+     ------------------------------------------------------- */
 
   const renderPage = () => {
 
@@ -550,401 +455,211 @@ function App() {
         return <AIInsights />;
 
       case "production":
-  return <HoneyProduction />;
+        return <HoneyProduction />;
 
       case "batches":
-  return <Batches />;
+        return <Batches />;
 
-case "qr":
-  return <QRVerification />;
+      case "qr":
+        return <QRVerification />;
+
       case "sync":
-        return (
-          <ComingSoon
-            title="Sync Center"
-            description="Manage offline data and synchronize it when internet is available."
-            icon={<RefreshCw size={45} />}
-          />
-        );
+        return <SyncCenter />;
 
       case "settings":
-        return (
-          <ComingSoon
-            title="Settings"
-            description="Manage BeeLieve preferences and system settings."
-            icon={<Settings size={45} />}
-          />
-        );
+        return <Settings />;
 
       default:
         return <Dashboard />;
     }
   };
 
-  // =====================================================
-  // APP UI
-  // =====================================================
+
+  /* -------------------------------------------------------
+     APP UI
+     ------------------------------------------------------- */
 
   return (
-    <div className="app">
+    <div className="app-container">
 
-      {/* ================= MOBILE MENU ================= */}
 
-      <button
-        className="mobile-menu-button"
-        onClick={() =>
-          setSidebarOpen(!sidebarOpen)
-        }
-      >
-        {sidebarOpen ? (
-          <X size={22} />
-        ) : (
-          <Menu size={22} />
-        )}
-      </button>
+      {/* MOBILE OVERLAY */}
 
-      {/* ================= SIDEBAR ================= */}
+      {mobileMenuOpen && (
+        <div
+          className="mobile-overlay"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+
+      {/* SIDEBAR */}
 
       <aside
         className={`sidebar ${
-          sidebarOpen ? "sidebar-open" : ""
+          mobileMenuOpen ? "sidebar-open" : ""
         }`}
       >
 
-        {/* ================= BRAND ================= */}
+        {/* LOGO */}
 
-        <div className="brand">
+        <div className="sidebar-logo">
 
-          <div className="brand-bee">
+          <div className="logo-bee">
             🐝
           </div>
 
           <div>
-
-            <h2>
-              BeeLieve
-            </h2>
-
-            <span>
-              Smart Beekeeping
-            </span>
-
+            <h2>BeeLieve</h2>
+            <span>Smart Beekeeping</span>
           </div>
 
         </div>
 
-        {/* ================= MAIN MENU ================= */}
 
-        <div className="nav-section">
+        {/* CLOSE MOBILE MENU */}
 
-          <p className="nav-title">
+        <button
+          className="mobile-close-button"
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          <X size={21} />
+        </button>
+
+
+        {/* NAVIGATION */}
+
+        <nav className="sidebar-navigation">
+
+          <span className="sidebar-label">
             MAIN MENU
-          </p>
+          </span>
 
-          {/* DASHBOARD */}
+          {navigationItems.map((item) => {
 
-          <button
-            className={`nav-item ${
-              activePage === "dashboard"
-                ? "active"
-                : ""
-            }`}
-            onClick={() =>
-              navigateTo("dashboard")
-            }
-          >
-            <LayoutDashboard size={21} />
+            const Icon = item.icon;
 
-            <span>
-              Dashboard
-            </span>
-          </button>
+            return (
+              <button
+                key={item.id}
+                className={`sidebar-nav-item ${
+                  activePage === item.id ? "active" : ""
+                }`}
+                onClick={() =>
+                  handlePageChange(item.id)
+                }
+              >
 
-          {/* HIVES */}
+                <Icon size={18} />
 
-          <button
-            className={`nav-item ${
-              activePage === "hives"
-                ? "active"
-                : ""
-            }`}
-            onClick={() =>
-              navigateTo("hives")
-            }
-          >
-            <Home size={21} />
+                <span>{item.label}</span>
 
-            <span>
-              Hives
-            </span>
-          </button>
+                {activePage === item.id && (
+                  <ChevronRight
+                    size={15}
+                    className="nav-arrow"
+                  />
+                )}
 
-          {/* SENSORS */}
+              </button>
+            );
 
-          <button
-            className={`nav-item ${
-              activePage === "sensors"
-                ? "active"
-                : ""
-            }`}
-            onClick={() =>
-              navigateTo("sensors")
-            }
-          >
-            <Activity size={21} />
+          })}
 
-            <span>
-              Sensors
-            </span>
-          </button>
+        </nav>
 
-          {/* ALERTS */}
 
-          <button
-            className={`nav-item ${
-              activePage === "alerts"
-                ? "active"
-                : ""
-            }`}
-            onClick={() =>
-              navigateTo("alerts")
-            }
-          >
-            <Bell size={21} />
+        {/* SIDEBAR BOTTOM */}
 
-            <span>
-              Alerts
-            </span>
+        <div className="sidebar-bottom">
 
-            {criticalHives + attentionHives > 0 && (
-              <span className="nav-badge">
-                {criticalHives + attentionHives}
-              </span>
-            )}
-          </button>
-
-          {/* AI INSIGHTS */}
-
-          <button
-            className={`nav-item ${
-              activePage === "ai"
-                ? "active"
-                : ""
-            }`}
-            onClick={() =>
-              navigateTo("ai")
-            }
-          >
-            <Brain size={21} />
-
-            <span>
-              AI Insights
-            </span>
-          </button>
-
-        </div>
-
-        {/* ================= MANAGEMENT ================= */}
-
-        <div className="nav-section">
-
-          <p className="nav-title">
-            MANAGEMENT
-          </p>
-
-          {/* HONEY PRODUCTION */}
-
-          <button
-            className={`nav-item ${
-              activePage === "production"
-                ? "active"
-                : ""
-            }`}
-            onClick={() =>
-              navigateTo("production")
-            }
-          >
-            <Package size={21} />
-
-            <span>
-              Honey Production
-            </span>
-          </button>
-
-          {/* HONEY BATCHES */}
-
-          <button
-            className={`nav-item ${
-              activePage === "batches"
-                ? "active"
-                : ""
-            }`}
-            onClick={() =>
-              navigateTo("batches")
-            }
-          >
-            <Package size={21} />
-
-            <span>
-              Honey Batches
-            </span>
-          </button>
-
-          {/* QR VERIFICATION */}
-
-          <button
-            className={`nav-item ${
-              activePage === "qr"
-                ? "active"
-                : ""
-            }`}
-            onClick={() =>
-              navigateTo("qr")
-            }
-          >
-            <QrCode size={21} />
-
-            <span>
-              QR Verification
-            </span>
-          </button>
-
-          {/* SYNC CENTER */}
-
-          <button
-            className={`nav-item ${
-              activePage === "sync"
-                ? "active"
-                : ""
-            }`}
-            onClick={() =>
-              navigateTo("sync")
-            }
-          >
-            <RefreshCw size={21} />
-
-            <span>
-              Sync Center
-            </span>
-          </button>
-
-        </div>
-
-        {/* ================= SIDEBAR FOOTER ================= */}
-
-        <div className="sidebar-footer">
-
-          {/* SETTINGS */}
-
-          <button
-            className={`nav-item ${
-              activePage === "settings"
-                ? "active"
-                : ""
-            }`}
-            onClick={() =>
-              navigateTo("settings")
-            }
-          >
-            <Settings size={21} />
-
-            <span>
-              Settings
-            </span>
-          </button>
-
-          {/* SYSTEM STATUS */}
-
-          <div className="system-status">
+          <div className="sidebar-system">
 
             <div className="system-status-icon">
               <Wifi size={16} />
             </div>
 
             <div>
-
-              <strong>
-                System Online
-              </strong>
-
-              <span>
-                BeeLieve connected
-              </span>
-
+              <strong>System Online</strong>
+              <span>BeeLieve connected</span>
             </div>
 
           </div>
 
-          {/* LOGOUT */}
 
-          <button
-            className="logout-button"
-            onClick={() =>
-              alert(
-                "Logout functionality will be added later."
-              )
-            }
-          >
-            <LogOut size={19} />
-
-            <span>
-              Logout
-            </span>
+          <button className="sidebar-logout">
+            <LogOut size={17} />
+            <span>Logout</span>
           </button>
 
         </div>
 
       </aside>
 
-      {/* =====================================================
-          MAIN
-      ===================================================== */}
 
-      <main className="main">
+      {/* MAIN AREA */}
 
-        {/* ================= TOP BAR ================= */}
+      <main className="main-content">
 
-        <header className="topbar">
+        {/* TOP HEADER */}
 
-          <div className="breadcrumb">
+        <header className="top-header">
 
-            <span>
-              BeeLieve
-            </span>
+          <div className="top-header-left">
 
-            <ChevronRight size={16} />
+            <button
+              className="mobile-menu-button"
+              onClick={() =>
+                setMobileMenuOpen(true)
+              }
+            >
+              <Menu size={22} />
+            </button>
 
-            <strong>
-              {getPageTitle()}
-            </strong>
+            <div>
+              <span className="breadcrumb">
+                BeeLieve
+              </span>
+
+              <h2>{getPageTitle()}</h2>
+            </div>
 
           </div>
 
-          <div className="topbar-right">
 
-            <div className="live-system">
+          <div className="top-header-right">
 
-              <span className="live-dot"></span>
+            <div className="header-status">
+              <span className="online-dot"></span>
+              Online
+            </div>
 
-              Live System
+            <div className="header-profile">
+              <div className="header-avatar">
+                B
+              </div>
 
+              <div>
+                <strong>Beekeeper</strong>
+                <span>Administrator</span>
+              </div>
             </div>
 
           </div>
 
         </header>
 
-        {/* ================= PAGE CONTENT ================= */}
 
-        {renderPage()}
+        {/* PAGE CONTENT */}
+
+        <div className="page-content">
+          {renderPage()}
+        </div>
 
       </main>
 
     </div>
   );
 }
-
-// =====================================================
-// IMPORTANT: APP.JSX MUST EXPORT APP
-// =====================================================
 
 export default App;

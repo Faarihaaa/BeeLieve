@@ -15,58 +15,51 @@ function Batches() {
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [qrImage, setQrImage] = useState("");
 
-  const [batches, setBatches] = useState(() => {
-    const savedBatches = localStorage.getItem("beelieve_batches");
-
-    if (savedBatches) {
-      return JSON.parse(savedBatches);
-    }
-
-    return [
-      {
-        id: "BATCH-001",
-        date: "2026-09-05",
-        hive: "H-001",
-        quantity: 12.5,
-        type: "Wildflower",
-        status: "Verified",
-      },
-      {
-        id: "BATCH-002",
-        date: "2026-09-02",
-        hive: "H-002",
-        quantity: 9.8,
-        type: "Multifloral",
-        status: "Verified",
-      },
-      {
-        id: "BATCH-003",
-        date: "2026-08-20",
-        hive: "H-003",
-        quantity: 7.2,
-        type: "Forest Honey",
-        status: "Verified",
-      },
-    ];
-  });
+  const [batches, setBatches] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [formData, setFormData] = useState({
-    batchId: "",
     date: "",
     hive: "",
     quantity: "",
     type: "",
   });
 
-  // SAVE BATCHES
-  useEffect(() => {
-    localStorage.setItem(
-      "beelieve_batches",
-      JSON.stringify(batches)
-    );
-  }, [batches]);
+  // =======================================
+  // LOAD BATCHES FROM DATABASE
+  // =======================================
 
-  // HANDLE FORM INPUT
+  const fetchBatches = async () => {
+    try {
+      setLoading(true);
+
+      const response = await fetch(
+        "http://localhost:5000/api/batches"
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch batches");
+      }
+
+      const data = await response.json();
+
+      setBatches(data);
+    } catch (error) {
+      console.error("Error loading batches:", error);
+      alert("Could not load batch records.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBatches();
+  }, []);
+
+  // =======================================
+  // FORM INPUT
+  // =======================================
+
   const handleChange = (event) => {
     const { name, value } = event.target;
 
@@ -76,98 +69,146 @@ function Batches() {
     }));
   };
 
+  // =======================================
   // CREATE BATCH
-  const createBatch = (event) => {
+  // =======================================
+
+  const createBatch = async (event) => {
     event.preventDefault();
 
     if (
-      !formData.batchId ||
       !formData.date ||
       !formData.hive ||
-      !formData.quantity ||
+      formData.quantity === "" ||
+      Number(formData.quantity) <= 0 ||
       !formData.type
     ) {
       alert("Please fill all batch details.");
       return;
     }
 
-    const batchId = formData.batchId.trim().toUpperCase();
-    const hiveId = formData.hive.trim().toUpperCase();
+    // Automatically generate Batch ID
+    const nextNumber =
+      batches.length > 0
+        ? Math.max(
+            ...batches.map((batch) => {
+              const match = String(batch.id).match(/BATCH-(\d+)/i);
 
-    const existingBatch = batches.find(
-      (batch) => batch.id.toUpperCase() === batchId
-    );
+              return match ? Number(match[1]) : 0;
+            })
+          ) + 1
+        : 1;
 
-    if (existingBatch) {
-      alert("Batch ID already exists.");
-      return;
+    const generatedBatchId = `BATCH-${String(
+      nextNumber
+    ).padStart(3, "0")}`;
+
+    try {
+      const response = await fetch(
+        "http://localhost:5000/api/batches",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json",
+          },
+
+          body: JSON.stringify({
+            batchId: generatedBatchId,
+            date: formData.date,
+            hive: formData.hive.trim().toUpperCase(),
+            quantity: Number(formData.quantity),
+            type: formData.type,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.message || "Failed to create batch"
+        );
+      }
+
+      alert(
+        `Honey batch ${generatedBatchId} created successfully. 🐝`
+      );
+
+      // Reset form
+      setFormData({
+        date: "",
+        hive: "",
+        quantity: "",
+        type: "",
+      });
+
+      setShowForm(false);
+
+      // Reload batches from PostgreSQL
+      fetchBatches();
+
+    } catch (error) {
+      console.error("Error creating batch:", error);
+
+      alert(error.message);
     }
-
-    const newBatch = {
-      id: batchId,
-      date: formData.date,
-      hive: hiveId,
-      quantity: Number(formData.quantity),
-      type: formData.type,
-      status: "Pending Verification",
-    };
-
-    setBatches((previousBatches) => [
-      newBatch,
-      ...previousBatches,
-    ]);
-
-    setFormData({
-      batchId: "",
-      date: "",
-      hive: "",
-      quantity: "",
-      type: "",
-    });
-
-    setShowForm(false);
-
-    alert("Honey batch created successfully.");
   };
 
-  // GENERATE REAL QR
+  // =======================================
+  // GENERATE QR
+  // =======================================
+
   const openQR = async (batch) => {
     try {
-      /*
-       * For now the QR contains the Batch ID.
-       *
-       * Later this can become:
-       * https://your-public-site.com/verify/BATCH-004
-       */
+      const qrData =
+        `https://beelieve-three.vercel.app/?verify=` +
+        encodeURIComponent(batch.id);
 
-      const qrData = `http://localhost:5173/?verify=${batch.id}`;
-      const generatedQR = await QRCode.toDataURL(qrData, {
-        width: 240,
-        margin: 2,
-      });
+      const generatedQR = await QRCode.toDataURL(
+        qrData,
+        {
+          width: 240,
+          margin: 2,
+        }
+      );
 
       setQrImage(generatedQR);
       setSelectedBatch(batch);
+
     } catch (error) {
       console.error("QR generation failed:", error);
+
       alert("Unable to generate QR code.");
     }
   };
+
+  // =======================================
+  // CLOSE QR
+  // =======================================
 
   const closeQR = () => {
     setSelectedBatch(null);
     setQrImage("");
   };
 
+  // =======================================
+  // SUMMARY CALCULATIONS
+  // =======================================
+
   const totalQuantity = batches.reduce(
     (total, batch) =>
-      total + Number(batch.quantity),
+      total + Number(batch.quantity || 0),
     0
   );
 
   const verifiedCount = batches.filter(
     (batch) => batch.status === "Verified"
   ).length;
+
+  // =======================================
+  // UI
+  // =======================================
 
   return (
     <div className="batches-page">
@@ -203,6 +244,7 @@ function Batches() {
 
       </div>
 
+
       {/* SUMMARY */}
 
       <div className="batch-summary">
@@ -215,10 +257,14 @@ function Batches() {
 
           <div>
             <span>Total Batches</span>
-            <strong>{batches.length}</strong>
+
+            <strong>
+              {batches.length}
+            </strong>
           </div>
 
         </div>
+
 
         <div className="batch-summary-card">
 
@@ -228,12 +274,14 @@ function Batches() {
 
           <div>
             <span>Total Honey</span>
+
             <strong>
               {totalQuantity.toFixed(1)} kg
             </strong>
           </div>
 
         </div>
+
 
         <div className="batch-summary-card">
 
@@ -243,12 +291,16 @@ function Batches() {
 
           <div>
             <span>Verified Batches</span>
-            <strong>{verifiedCount}</strong>
+
+            <strong>
+              {verifiedCount}
+            </strong>
           </div>
 
         </div>
 
       </div>
+
 
       {/* TRACEABILITY INFO */}
 
@@ -259,6 +311,7 @@ function Batches() {
         </div>
 
         <div>
+
           <strong>Honey Traceability</strong>
 
           <p>
@@ -266,23 +319,26 @@ function Batches() {
             that can be linked to hive information,
             harvest records and QR-based verification.
           </p>
+
         </div>
 
       </div>
 
-      {/* PROTOTYPE NOTE */}
+
+      {/* DATABASE NOTE */}
 
       <div className="batch-prototype-note">
 
-        <strong>Prototype:</strong>
+        <strong>Database:</strong>
 
         <span>
-          Batch records are currently stored locally.
-          Public verification can be connected during
-          deployment.
+          Batch records are stored securely in
+          PostgreSQL. QR verification is currently
+          prepared for the BeeLieve verification flow.
         </span>
 
       </div>
+
 
       {/* BATCH LIST */}
 
@@ -291,124 +347,163 @@ function Batches() {
         <div className="batch-section-header">
 
           <div>
+
             <h2>Batch Records</h2>
 
             <p>
               Recently created honey batches
             </p>
+
           </div>
 
         </div>
 
+
         <div className="batch-table-wrapper">
 
-          <table className="batch-table">
+          {loading ? (
 
-            <thead>
+            <div className="empty-state">
+              Loading batch records...
+            </div>
 
-              <tr>
-                <th>Batch ID</th>
-                <th>Harvest Date</th>
-                <th>Hive</th>
-                <th>Honey Type</th>
-                <th>Quantity</th>
-                <th>Status</th>
-                <th>QR</th>
-              </tr>
+          ) : batches.length === 0 ? (
 
-            </thead>
+            <div className="empty-state">
+              No batch records yet. Click "Create Batch"
+              to create one.
+            </div>
 
-            <tbody>
+          ) : (
 
-              {batches.map((batch) => (
+            <table className="batch-table">
 
-                <tr key={batch.id}>
+              <thead>
 
-                  <td>
-                    <strong>{batch.id}</strong>
-                  </td>
-
-                  <td>
-
-                    <div className="batch-date">
-
-                      <Calendar size={14} />
-
-                      {batch.date}
-
-                    </div>
-
-                  </td>
-
-                  <td>{batch.hive}</td>
-
-                  <td>
-
-                    <span className="batch-honey-type">
-                      {batch.type}
-                    </span>
-
-                  </td>
-
-                  <td>
-
-                    <strong>
-                      {Number(batch.quantity).toFixed(1)} kg
-                    </strong>
-
-                  </td>
-
-                  <td>
-
-                    {batch.status === "Verified" ? (
-
-                      <span className="verified-badge">
-
-                        <CheckCircle size={13} />
-
-                        Verified
-
-                      </span>
-
-                    ) : (
-
-                      <span className="pending-badge">
-
-                        <CheckCircle size={13} />
-
-                        Pending Verification
-
-                      </span>
-
-                    )}
-
-                  </td>
-
-                  <td>
-
-                    <button
-                      className="batch-qr-button"
-                      onClick={() => openQR(batch)}
-                    >
-                      <QrCode size={16} />
-                      View QR
-                    </button>
-
-                  </td>
-
+                <tr>
+                  <th>Batch ID</th>
+                  <th>Harvest Date</th>
+                  <th>Hive</th>
+                  <th>Honey Type</th>
+                  <th>Quantity</th>
+                  <th>Status</th>
+                  <th>QR</th>
                 </tr>
 
-              ))}
+              </thead>
 
-            </tbody>
 
-          </table>
+              <tbody>
+
+                {batches.map((batch) => (
+
+                  <tr key={batch.id}>
+
+                    <td>
+                      <strong>
+                        {batch.id}
+                      </strong>
+                    </td>
+
+
+                    <td>
+
+                      <div className="batch-date">
+
+                        <Calendar size={14} />
+
+                        {batch.date}
+
+                      </div>
+
+                    </td>
+
+
+                    <td>
+                      {batch.hive}
+                    </td>
+
+
+                    <td>
+
+                      <span className="batch-honey-type">
+                        {batch.type}
+                      </span>
+
+                    </td>
+
+
+                    <td>
+
+                      <strong>
+                        {Number(batch.quantity).toFixed(1)} kg
+                      </strong>
+
+                    </td>
+
+
+                    <td>
+
+                      {batch.status === "Verified" ? (
+
+                        <span className="verified-badge">
+
+                          <CheckCircle size={13} />
+
+                          Verified
+
+                        </span>
+
+                      ) : (
+
+                        <span className="pending-badge">
+
+                          <CheckCircle size={13} />
+
+                          Pending Verification
+
+                        </span>
+
+                      )}
+
+                    </td>
+
+
+                    <td>
+
+                      <button
+                        className="batch-qr-button"
+                        onClick={() =>
+                          openQR(batch)
+                        }
+                      >
+
+                        <QrCode size={16} />
+
+                        View QR
+
+                      </button>
+
+                    </td>
+
+                  </tr>
+
+                ))}
+
+              </tbody>
+
+            </table>
+
+          )}
 
         </div>
 
       </div>
 
-      {/* CREATE BATCH MODAL */}
+
+      {/* =======================================
+          CREATE BATCH MODAL
+      ======================================= */}
 
       {showForm && (
 
@@ -428,32 +523,27 @@ function Batches() {
 
               </div>
 
+
               <button
                 className="close-batch-modal"
-                onClick={() => setShowForm(false)}
+                onClick={() =>
+                  setShowForm(false)
+                }
               >
+
                 <X size={20} />
+
               </button>
 
             </div>
+
 
             <form onSubmit={createBatch}>
 
               <div className="batch-form-grid">
 
-                <div className="batch-form-group">
 
-                  <label>Batch ID</label>
-
-                  <input
-                    type="text"
-                    name="batchId"
-                    placeholder="Example: BATCH-004"
-                    value={formData.batchId}
-                    onChange={handleChange}
-                  />
-
-                </div>
+                {/* HARVEST DATE */}
 
                 <div className="batch-form-group">
 
@@ -468,6 +558,9 @@ function Batches() {
 
                 </div>
 
+
+                {/* HIVE ID */}
+
                 <div className="batch-form-group">
 
                   <label>Hive ID</label>
@@ -475,28 +568,71 @@ function Batches() {
                   <input
                     type="text"
                     name="hive"
-                    placeholder="Example: H-001"
+                    placeholder="Example: H-101"
                     value={formData.hive}
                     onChange={handleChange}
                   />
 
                 </div>
 
+
+                {/* QUANTITY */}
+
                 <div className="batch-form-group">
 
                   <label>Quantity (kg)</label>
 
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.1"
-                    name="quantity"
-                    placeholder="Example: 10.5"
-                    value={formData.quantity}
-                    onChange={handleChange}
-                  />
+                  <div className="quantity-input-wrapper">
+
+                    <button
+                      type="button"
+                      className="quantity-btn"
+                      onClick={() =>
+                        setFormData({
+                          ...formData,
+                          quantity: Math.max(
+                            0,
+                            Number(formData.quantity || 0) - 1
+                          ),
+                        })
+                      }
+                    >
+                      −
+                    </button>
+
+
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      name="quantity"
+                      value={formData.quantity}
+                      onChange={handleChange}
+                      placeholder="Enter quantity"
+                      className="quantity-input"
+                    />
+
+
+                    <button
+                      type="button"
+                      className="quantity-btn"
+                      onClick={() =>
+                        setFormData({
+                          ...formData,
+                          quantity:
+                            Number(formData.quantity || 0) + 1,
+                        })
+                      }
+                    >
+                      +
+                    </button>
+
+                  </div>
 
                 </div>
+
+
+                {/* HONEY TYPE */}
 
                 <div className="batch-form-group full-width">
 
@@ -538,22 +674,31 @@ function Batches() {
 
               </div>
 
+
+              {/* FORM BUTTONS */}
+
               <div className="batch-form-buttons">
 
                 <button
                   type="button"
                   className="cancel-batch-button"
-                  onClick={() => setShowForm(false)}
+                  onClick={() =>
+                    setShowForm(false)
+                  }
                 >
                   Cancel
                 </button>
+
 
                 <button
                   type="submit"
                   className="save-batch-button"
                 >
+
                   <Plus size={16} />
+
                   Create Batch
+
                 </button>
 
               </div>
@@ -566,7 +711,10 @@ function Batches() {
 
       )}
 
-      {/* QR PREVIEW */}
+
+      {/* =======================================
+          QR PREVIEW
+      ======================================= */}
 
       {selectedBatch && (
 
@@ -578,8 +726,11 @@ function Batches() {
               className="close-batch-modal qr-close"
               onClick={closeQR}
             >
+
               <X size={20} />
+
             </button>
+
 
             <div className="qr-preview-icon">
 
@@ -587,25 +738,31 @@ function Batches() {
 
             </div>
 
-            <h2>{selectedBatch.id}</h2>
+
+            <h2>
+              {selectedBatch.id}
+            </h2>
+
 
             <p>
               Honey batch verification QR
             </p>
 
-            {/* REAL QR */}
 
             <div className="real-qr-container">
 
               {qrImage && (
+
                 <img
                   src={qrImage}
                   alt={`QR code for ${selectedBatch.id}`}
                   className="real-qr-image"
                 />
+
               )}
 
             </div>
+
 
             <div className="qr-batch-details">
 
@@ -619,6 +776,7 @@ function Batches() {
 
               </div>
 
+
               <div>
 
                 <span>Honey Type</span>
@@ -629,6 +787,7 @@ function Batches() {
 
               </div>
 
+
               <div>
 
                 <span>Quantity</span>
@@ -638,6 +797,7 @@ function Batches() {
                 </strong>
 
               </div>
+
 
               <div>
 
@@ -661,11 +821,12 @@ function Batches() {
 
             </div>
 
+
             <p className="qr-demo-note">
 
-              This QR currently identifies the batch.
-              Public verification will be connected
-              to the BeeLieve verification page.
+              This QR identifies the batch and is ready
+              to connect to the BeeLieve verification
+              page.
 
             </p>
 
